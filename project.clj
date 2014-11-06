@@ -21,4 +21,11 @@
                          :output-dir "dev-resources/public/js/compiled/out"
                          :optimizations :none
                          :source-map true
-                         :pretty-print true}}]})
+                         :pretty-print true}}
+             {:id "release"
+              :source-paths ["src-cljs/memobook"]
+              :compiler {:output-to "resources/public/js/compiled/memobook.js"
+                         :output-dir "resources/public/js/compiled/out"
+                         :optimizations :advanced
+                         :preamble ["react/react.min.js"]
+                         :externs ["react/externs/react.js"]}}]})

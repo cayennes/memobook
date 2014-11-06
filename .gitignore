@@ -1,5 +1,6 @@
 .lein-repl-history
 .repl/
+resources/public/js/compiled/
 dev-resources/public/js/compiled/
 out/
 target/
