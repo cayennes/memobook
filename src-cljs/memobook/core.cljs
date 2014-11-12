@@ -6,8 +6,7 @@
 
 (def lines
   (->> vocab
-       (map :items)
-       (apply concat)
+       (map :item)
        (shuffle)
        (mapv #(hash-map :data %
                         :state :unseen))))
