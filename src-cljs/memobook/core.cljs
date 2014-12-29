@@ -19,6 +19,8 @@
 
 (defmulti line-view :type)
 
+(defmulti show-line :type)
+
 (defn fake [item] {:data (repeat (count item) nil)
                    :state :fake
                    :type (:type item)})
@@ -67,8 +69,11 @@
                     (:data line)
                     [(-> line :data first) nil nil]))))))
 
-(defn show-lines [lines]; TODO: for sentences as well
-  (mapv #(if (= :prompt (:state %)) (assoc % :state :right) %) lines))
+(defmethod show-line :word
+  [line]
+  (if (= :prompt (:state line))
+    (assoc line :state :right)
+    line))
 
 ;; display sentences
 
@@ -113,6 +118,13 @@
                 (om/build correctness-thumb-view (:state line)))
         (dom/td nil (om/build sentence-view line))))))
 
+(defmethod show-line :sentence [line]
+  (if (:state line)
+    (assoc line
+           :data (mapv #(assoc % :show-kana true :show-translation true)
+                       (:data line)))
+    line))
+
 ;; more general stuff
 
 (defn reset-line [line]
@@ -128,6 +140,9 @@
   (->> lines
        (filterv #(= :wrong (:state % :wrong)))
        (mapv reset-line)))
+
+(defn show-lines [lines]
+  (mapv show-line lines))
 
 (defn review-table-view [lines owner]
   (reify
