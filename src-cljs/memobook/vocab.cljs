@@ -2,8 +2,9 @@
 
 (defn make-tagged-item
   [item & tags]
-  {:item item
-   :tags tags})
+  {:data item
+   :tags tags
+   :type :word})
 
 (def vocab
   (vec
