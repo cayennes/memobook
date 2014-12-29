@@ -84,15 +84,16 @@
   (reify
     om/IRender
     (render [_]
-      (dom/ruby #js {:onClick (fn [] (if-not (:show-kana @element)
-                                       (om/transact! element #(assoc % :show-kana true))
-                                       (om/transact! element #(assoc % :show-translation true))))}
+      (dom/ruby #js {:onClick (fn []
+                                (when (or (:show-kana @element) (= "" (:kana @element)))
+                                  (om/transact! element #(assoc % :show-translation true)))
+                                (om/transact! element #(assoc % :show-kana true)))}
                 (:text element)
-                  (when (:show-kana element) (dom/rt nil (:kana element)))
-                  (when (:show-translation element)
-                    ;; ruby-position "under" isn't supported by browsers.  oh well.
-                    (dom/rt #js {:style #js {:ruby-position "under"}}
-                            (:definition element)))))))
+                (when (:show-kana element) (dom/rt nil (:kana element)))
+                (when (:show-translation element)
+                  ;; ruby-position "under" isn't supported by browsers.  oh well.
+                  (dom/rt #js {:style #js {:ruby-position "under"}}
+                          (:definition element)))))))
 
 (defn sentence-view [sentence owner]
   (reify
