@@ -1,8 +1,16 @@
 (ns memobook.vocab)
 
+(defn make-tagged-item
+  [item & tags]
+  {:data item
+   :tags tags
+   :type :word})
+
 (def vocab
-  [{:title "Lesson 1"
-    :items [["あの" "あの" "um..."]
+  (vec
+    (concat
+      (map #(make-tagged-item % "Genki Lesson 1")
+           [["あの" "あの" "um..."]
             ["今" "いま" "now"]
             ["英語" "えいご" "English (language)"]
             ["学生" "がくせい" "student"]
@@ -23,7 +31,7 @@
             ["名前" "なまえ" "name"]
             ["なん／なに" "何" "what"]
             ["日本" "にほん" "Japan"]
-            ["〜年生" "〜ねんせい" "...year" "student"]
+            ["〜年生" "〜ねんせい" "...year student"]
             ["はい" "はい" "yes"]
             ["半" "はん" "half"]
             ["番号" "ばんごう" "number"]
@@ -57,59 +65,59 @@
             ["お姉さん" "おねえさん" "older sister"]
             ["お兄さん" "おにいさん" "older brother"]
             ["妹" "いもうと" "younger sister"]
-            ["弟" "おとうと" "younger brother"]]}
-   {:title "Lesson 2"
-    :items  [["これ" "これ" "this one"]
-             ["それ" "それ" "that one"]
-             ["あれ" "あれ" "that one (over there)"]
-             ["どれ" "どれ" "which one"]
-             ["この" "この" "this ..."]
-             ["その" "その" "that ..."]
-             ["あの" "あの" "that ... (over there)"]
-             ["どの" "どの" "which ..."]
-             ["あそこ" "あそこ" "over there"]
-             ["どこ" "どこ" "where"]
-             ["だれ" "だれ" "who"]
-             ["おいしい" "おいしい" "delicious"]
-             ["魚" "さかな" "fish"]
-             ["とんかつ" "とんかつ" "pork cutlet"]
-             ["肉" "にく" "meat"]
-             ["メニュー" "メニュー" "menu"]
-             ["野菜" "やさい" "vegetable"]
-             ["鉛筆" "えんぴつ" "pencil"]
-             ["傘" "かさ" "umbrella"]
-             ["かばん" "かばん" "bag"]
-             ["靴" "くつ" "shoes"]
-             ["財布" "さいふ" "wallet"]
-             ["ジーンズ" "ジーンズ" "jeans"]
-             ["辞書" "じしょ" "dictionary"]
-             ["自転車" "じてんしゃ" "bicycle"]
-             ["新聞" "しんぶん" "newspaper"]
-             ["トイレ" "トイレ" "toilet; restroom"]
-             ["時計" "とけい" "watch; clock"]
-             ["ノート" "ノート" "notebook"]
-             ["ペン" "ペン" "pen"]
-             ["帽子" "ぼうし" "hat; cap"]
-             ["本" "ほん" "book"]
-             ["喫茶店" "きっさてん" "cafe"]
-             ["銀行" "ぎんこう" "bank"]
-             ["図書館" "としょかん" "library"]
-             ["郵便局" "ゆうびんきょく" "post office"]
-             ["経済" "けいざい" "economics"]
-             ["いくら" "いくら" "how much"]
-             ["〜円" "〜えん" "...yen"]
-             ["高い" "たかい" "expensive; high"]
-             ["いらっしゃいませ" "いらっしゃいませ" "Welcome (to our store)"]
-             ["（〜を）おねがいします" "（〜を）おねがいします" "..., please."]
-             ["（〜を）ください" "（〜を）ください" "Please give me..."]
-             ["じゃあ" "じゃあ" "then...; if that is the case,..."]
-             ["どうぞ" "どうぞ" "Please.; Here it is."]
-             ["どうも" "どうも" "Thank you."]
-             ["そこ" "そこ" "there"]
-             ["ここ" "ここ" "here"]
-             ["Tシャツ" "Tシャツ" "T-shirt"]]}
-   {:title "Lesson 3"
-    :items [["映画" "えいが" "movie"]
+            ["弟" "おとうと" "younger brother"]])
+      (map #(make-tagged-item % "Genki Lesson 2")
+           [["これ" "これ" "this one"]
+            ["それ" "それ" "that one"]
+            ["あれ" "あれ" "that one (over there)"]
+            ["どれ" "どれ" "which one"]
+            ["この" "この" "this ..."]
+            ["その" "その" "that ..."]
+            ["あの" "あの" "that ... (over there)"]
+            ["どの" "どの" "which ..."]
+            ["あそこ" "あそこ" "over there"]
+            ["どこ" "どこ" "where"]
+            ["だれ" "だれ" "who"]
+            ["おいしい" "おいしい" "delicious"]
+            ["魚" "さかな" "fish"]
+            ["とんかつ" "とんかつ" "pork cutlet"]
+            ["肉" "にく" "meat"]
+            ["メニュー" "メニュー" "menu"]
+            ["野菜" "やさい" "vegetable"]
+            ["鉛筆" "えんぴつ" "pencil"]
+            ["傘" "かさ" "umbrella"]
+            ["かばん" "かばん" "bag"]
+            ["靴" "くつ" "shoes"]
+            ["財布" "さいふ" "wallet"]
+            ["ジーンズ" "ジーンズ" "jeans"]
+            ["辞書" "じしょ" "dictionary"]
+            ["自転車" "じてんしゃ" "bicycle"]
+            ["新聞" "しんぶん" "newspaper"]
+            ["トイレ" "トイレ" "toilet; restroom"]
+            ["時計" "とけい" "watch; clock"]
+            ["ノート" "ノート" "notebook"]
+            ["ペン" "ペン" "pen"]
+            ["帽子" "ぼうし" "hat; cap"]
+            ["本" "ほん" "book"]
+            ["喫茶店" "きっさてん" "cafe"]
+            ["銀行" "ぎんこう" "bank"]
+            ["図書館" "としょかん" "library"]
+            ["郵便局" "ゆうびんきょく" "post office"]
+            ["経済" "けいざい" "economics"]
+            ["いくら" "いくら" "how much"]
+            ["〜円" "〜えん" "...yen"]
+            ["高い" "たかい" "expensive; high"]
+            ["いらっしゃいませ" "いらっしゃいませ" "Welcome (to our store)"]
+            ["（〜を）おねがいします" "（〜を）おねがいします" "..., please."]
+            ["（〜を）ください" "（〜を）ください" "Please give me..."]
+            ["じゃあ" "じゃあ" "then...; if that is the case,..."]
+            ["どうぞ" "どうぞ" "Please.; Here it is."]
+            ["どうも" "どうも" "Thank you."]
+            ["そこ" "そこ" "there"]
+            ["ここ" "ここ" "here"]
+            ["Tシャツ" "Tシャツ" "T-shirt"]])
+      (map #(make-tagged-item % "Genki Lesson 3")
+           [["映画" "えいが" "movie"]
             ["音楽" "おんがく" "music"]
             ["雑誌" "ざっし" "magazine"]
             ["スポーツ" "スポーツ" "sports"]
@@ -162,9 +170,9 @@
             ["よく" "よく" "often; much"]
             ["そうですね" "そうですね" "That's right.; Let me see."]
             ["でも" "でも" "but"]
-            ["どうですか" "どうですか" "How about...?; How is...?"]]}
-   {:title "Lesson 4"
-    :items [["アルバイト" "アルバイト" "part-time job"]
+            ["どうですか" "どうですか" "How about...?; How is...?"]])
+      (map #(make-tagged-item % "Genki Lesson 4")
+           [["アルバイト" "アルバイト" "part-time job"]
             ["買い物" "かいもの" "shopping"]
             ["クラス" "クラス" "class"]
             ["あなた" "あなた" "you"]
@@ -225,9 +233,9 @@
             ["間" "あいだ" "between"]
             ["月曜日" "げつようび" "Monday"]
             ["いす" "いす" "chair"]
-            ["メール" "メール" "e-mail"]]}
-   {:title "Lesson 5"
-    :items [["海" "うみ" "sea"]
+            ["メール" "メール" "e-mail"]])
+      (map #(make-tagged-item % "Genki Lesson 5")
+           [["海" "うみ" "sea"]
             ["切手" "きって" "postal stamps"]
             ["切符" "きっぷ" "ticket"]
             ["サーフィン" "サーフィン" "surfing"]
@@ -282,9 +290,9 @@
             ["どんな" "どんな" "what kind of..."]
             ["〜枚" "〜まい" "[counter for flat objects]"]
             ["〜まで" "〜まで" "to (a place); as far as (a place); till (a time)"]
-            ["すごく" "すごく" "extremely"]]}
-   {:title "Lesson 6"
-    :items [["CD　（シーディー）" "CD　（シーディー）" "CD"]
+            ["すごく" "すごく" "extremely"]])
+      (map #(make-tagged-item % "Genki Lesson 6")
+           [["CD　（シーディー）" "CD　（シーディー）" "CD"]
             ["お金" "おかね" "money"]
             ["お風呂" "おふろ" "bath"]
             ["漢字" "かんじ" "kanji; Chinese character"]
@@ -334,4 +342,4 @@
             ["本当ですか" "ほんとうですか" "Really?"]
             ["ゆっくり" "ゆっくり" "slowly; leisurely; unhurriedly"]
             ["シャワー" "シャワー" "shower"]
-            ["シャワーを浴びる" "シャワーをあびる" "to take a shower"]]}])
+            ["シャワーを浴びる" "シャワーをあびる" "to take a shower"]]))))
