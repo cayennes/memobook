@@ -120,7 +120,7 @@
     (if (= :sentence (:type prompt-line))
       (update-in prompt-line
                  [:data]
-                 (partial mapv #(assoc % :show-kana false :show-definition false)))
+                 (partial mapv #(assoc % :show-kana false :show-translation false)))
       prompt-line)
     line))
 
