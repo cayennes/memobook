@@ -6,7 +6,6 @@
        (mapv #(hash-map :text (or (nth % 1) (nth % 2))
                         :kana (nth % 3)
                         :definition (nth % 4)))))
-(enable-console-print!)
 
 (defn make-sentence [raw]
   {:data (parse raw) :page page :type :sentence})
