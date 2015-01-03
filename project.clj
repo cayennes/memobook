@@ -16,14 +16,14 @@
 
   :cljsbuild {
     :builds [{:id "dev"
-              :source-paths ["src-cljs/memobook" "src-cljs/memobook_dev"]
+              :source-paths ["src-cljs" "src-cljs-dev"]
               :compiler {:output-to "dev-resources/public/js/compiled/memobook.js"
                          :output-dir "dev-resources/public/js/compiled/out"
                          :optimizations :none
                          :source-map true
                          :pretty-print true}}
              {:id "release"
-              :source-paths ["src-cljs/memobook"]
+              :source-paths ["src-cljs"]
               :compiler {:output-to "resources/public/js/compiled/memobook.js"
                          :output-dir "resources/public/js/compiled/out"
                          :optimizations :advanced
