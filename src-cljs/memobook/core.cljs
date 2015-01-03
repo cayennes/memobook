@@ -97,8 +97,8 @@
                 (:text element)
                 (when (:show-kana element) (dom/rt nil (:kana element)))
                 (when (:show-translation element)
-                  ;; ruby-position "under" isn't supported by browsers.  oh well.
-                  (dom/rt #js {:style #js {:ruby-position "under"}}
+                  ;; rubyPosition "under" isn't supported by browsers.  oh well.
+                  (dom/rt #js {:style #js {:rubyPosition "under"}}
                           (:definition element)))))))
 
 (defn sentence-view [sentence owner]
@@ -106,7 +106,7 @@
     om/IRender
     (render [_]
       (apply dom/span
-             #js {:style #js {:font-size "16pt"}}
+             #js {:style #js {:fontSize "16pt"}}
              (om/build-all sentence-element-view (:data sentence))))))
 
 (defmethod line-view :sentence
@@ -156,7 +156,8 @@
     om/IRender
     (render [_]
       (dom/div #js {:className "panel panel-default"}
-               (apply dom/table #js {:className "table"}
+               (apply dom/table
+                      #js {:className "table"}
                       (apply dom/tr
                              nil
                              (dom/th nil (dom/span #js {:className "glyphicon glyphicon-thumbs-up"}))
@@ -187,7 +188,7 @@
                                              :className (if (= :words (:mode app)) "active" "")
                                              :onClick (fn [] (om/update! app :mode :words))}
                                         (dom/a nil "words"))))
-               (dom/div #js {:style #js {:font-family "serif"} :className "panel-body"}
+               (dom/div #js {:style #js {:fontFamily "serif"} :className "panel-body"}
                         nil
                         (om/build review-table-view ((:mode app) app)))))))
 
