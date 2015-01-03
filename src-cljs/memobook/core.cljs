@@ -1,16 +1,24 @@
 (ns memobook.core
-  (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [memobook.vocab :refer [vocab]]
-            [memobook.sentences :refer [sentences]]
+  (:require [memobook.data :as data]
+            [memobook.example-data :as example-data]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]))
 
 ;; initialize data
 
-(def word-lines (shuffle vocab))
+(defn flatten-data [data]
+  (->> data
+       (map :content)
+       (apply concat)
+       vec))
 
-(def app-state (atom {:words word-lines
-                      :sentences sentences
+(def app-state (atom {:words (-> example-data/word-data
+                                 data/read-input
+                                 flatten-data
+                                 shuffle)
+                      :sentences (-> example-data/sentence-data
+                                     data/read-input
+                                     flatten-data)
                       :mode :sentences}))
 
 ;; some general stuff
@@ -33,8 +41,6 @@
 
 (defn set-seen [line]
   (when-not (:state line) (om/update! line :state :prompt)))
-
-
 
 (defn correctness-thumb-view [state owner]
   (reify
