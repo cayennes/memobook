@@ -1,16 +1,24 @@
 (ns memobook.core
-  (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [memobook.vocab :refer [vocab]]
-            [memobook.sentences :refer [sentences]]
+  (:require [memobook.data :as data]
+            [memobook.example-data :as example-data]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]))
 
 ;; initialize data
 
-(def word-lines (shuffle vocab))
+(defn flatten-data [data]
+  (->> data
+       (map :content)
+       (apply concat)
+       vec))
 
-(def app-state (atom {:words word-lines
-                      :sentences sentences
+(def app-state (atom {:words (-> example-data/word-data
+                                 data/read-input
+                                 flatten-data
+                                 shuffle)
+                      :sentences (-> example-data/sentence-data
+                                     data/read-input
+                                     flatten-data)
                       :mode :sentences}))
 
 ;; some general stuff
@@ -18,6 +26,8 @@
 (defmulti header-for :type)
 
 (defmulti line-view :type)
+
+(defmulti show-line :type)
 
 (defn fake [item] {:data (repeat (count item) nil)
                    :state :fake
@@ -31,8 +41,6 @@
 
 (defn set-seen [line]
   (when-not (:state line) (om/update! line :state :prompt)))
-
-
 
 (defn correctness-thumb-view [state owner]
   (reify
@@ -67,8 +75,11 @@
                     (:data line)
                     [(-> line :data first) nil nil]))))))
 
-(defn show-lines [lines]; TODO: for sentences as well
-  (mapv #(if (= :prompt (:state %)) (assoc % :state :right) %) lines))
+(defmethod show-line :word
+  [line]
+  (if (= :prompt (:state line))
+    (assoc line :state :right)
+    line))
 
 ;; display sentences
 
@@ -79,15 +90,16 @@
   (reify
     om/IRender
     (render [_]
-      (dom/ruby #js {:onClick (fn [] (if-not (:show-kana @element)
-                                       (om/transact! element #(assoc % :show-kana true))
-                                       (om/transact! element #(assoc % :show-translation true))))}
+      (dom/ruby #js {:onClick (fn []
+                                (when (or (:show-kana @element) (= "" (:kana @element)))
+                                  (om/transact! element #(assoc % :show-translation true)))
+                                (om/transact! element #(assoc % :show-kana true)))}
                 (:text element)
-                  (when (:show-kana element) (dom/rt nil (:kana element)))
-                  (when (:show-translation element)
-                    ;; ruby-position "under" isn't supported by browsers.  oh well.
-                    (dom/rt #js {:style #js {:ruby-position "under"}}
-                            (:definition element)))))))
+                (when (:show-kana element) (dom/rt nil (:kana element)))
+                (when (:show-translation element)
+                  ;; ruby-position "under" isn't supported by browsers.  oh well.
+                  (dom/rt #js {:style #js {:ruby-position "under"}}
+                          (:definition element)))))))
 
 (defn sentence-view [sentence owner]
   (reify
@@ -113,6 +125,13 @@
                 (om/build correctness-thumb-view (:state line)))
         (dom/td nil (om/build sentence-view line))))))
 
+(defmethod show-line :sentence [line]
+  (if (:state line)
+    (assoc line
+           :data (mapv #(assoc % :show-kana true :show-translation true)
+                       (:data line)))
+    line))
+
 ;; more general stuff
 
 (defn reset-line [line]
@@ -120,7 +139,7 @@
     (if (= :sentence (:type prompt-line))
       (update-in prompt-line
                  [:data]
-                 (partial mapv #(assoc % :show-kana false :show-definition false)))
+                 (partial mapv #(assoc % :show-kana false :show-translation false)))
       prompt-line)
     line))
 
@@ -128,6 +147,9 @@
   (->> lines
        (filterv #(= :wrong (:state % :wrong)))
        (mapv reset-line)))
+
+(defn show-lines [lines]
+  (mapv show-line lines))
 
 (defn review-table-view [lines owner]
   (reify
