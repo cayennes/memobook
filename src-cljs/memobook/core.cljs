@@ -2,7 +2,8 @@
   (:require [memobook.data :as data]
             [memobook.example-data :as example-data]
             [om.core :as om :include-macros true]
-            [om.dom :as dom :include-macros true]))
+            [om.dom :as dom :include-macros true]
+            [ajax.core :as ajax]))
 
 ;; initialize data
 
@@ -16,10 +17,16 @@
                                  data/read-input
                                  flatten-data
                                  shuffle)
-                      :sentences (-> example-data/sentence-data
-                                     data/read-input
-                                     flatten-data)
+                      :sentences []
                       :mode :sentences}))
+
+(defn load-sentences! [data]
+  (->> data
+       data/read-input
+       flatten-data
+       (swap! app-state #(assoc %1 :sentences %2))))
+
+(load-sentences! example-data/sentence-data)
 
 ;; some general stuff
 
@@ -97,8 +104,8 @@
                 (:text element)
                 (when (:show-kana element) (dom/rt nil (:kana element)))
                 (when (:show-translation element)
-                  ;; ruby-position "under" isn't supported by browsers.  oh well.
-                  (dom/rt #js {:style #js {:ruby-position "under"}}
+                  ;; rubyPosition "under" isn't supported by browsers.  oh well.
+                  (dom/rt #js {:style #js {:rubyPosition "under"}}
                           (:definition element)))))))
 
 (defn sentence-view [sentence owner]
@@ -106,7 +113,7 @@
     om/IRender
     (render [_]
       (apply dom/span
-             #js {:style #js {:font-size "16pt"}}
+             #js {:style #js {:fontSize "16pt"}}
              (om/build-all sentence-element-view (:data sentence))))))
 
 (defmethod line-view :sentence
@@ -156,7 +163,8 @@
     om/IRender
     (render [_]
       (dom/div #js {:className "panel panel-default"}
-               (apply dom/table #js {:className "table"}
+               (apply dom/table
+                      #js {:className "table"}
                       (apply dom/tr
                              nil
                              (dom/th nil (dom/span #js {:className "glyphicon glyphicon-thumbs-up"}))
@@ -172,11 +180,31 @@
                                     :onClick #(om/transact! lines clear-correct)}
                      (dom/span #js {:className "glyphicon glyphicon-play"}))))))))
 
+;; TODO: ability to load vocab as well (will need some new data handling)
+(defn handle-dropbox-file [response]
+  (-> response
+      js->clj
+      first
+      (get "link")
+      (ajax/GET {:response-format :edn
+                 :handler load-sentences!})))
+
+(defn open-dropbox-chooser []
+  (.choose js/Dropbox #js {:success handle-dropbox-file
+                           :cancel identity
+                           :linkType "direct"
+                           :multiselect false
+                           :extensions #js [".edn"]}))
+
 (defn app-view [app owner]
   (reify
     om/IRender
     (render [_]
       (dom/div #js {:className "panel panel-default"}
+               (dom/div #js {:className "panel-heading"}
+                        (dom/button #js {:onClick open-dropbox-chooser
+                                         :className "btn btn-default"}
+                                    "load edn sentence file from DropBox"))
                (dom/nav #js {:className "panel-body"}
                         (dom/ul #js {:className "nav nav-tabs"}
                                 (dom/li #js {:role "presentation"
@@ -187,7 +215,7 @@
                                              :className (if (= :words (:mode app)) "active" "")
                                              :onClick (fn [] (om/update! app :mode :words))}
                                         (dom/a nil "words"))))
-               (dom/div #js {:style #js {:font-family "serif"} :className "panel-body"}
+               (dom/div #js {:style #js {:fontFamily "serif"} :className "panel-body"}
                         nil
                         (om/build review-table-view ((:mode app) app)))))))
 

@@ -1,8 +1,11 @@
 # Memobook
 
-A computer implementation of studying via lists instead of flashcards.  Just
+A computer implementation of studying via lists instead of flashcards.  It has
 some hardcoded Japanese vocab from the Genki textbook, and a few sentences from
 よつばと！.
+
+I'm slowly working on it, but currently that's taking the form of inexplicable
+half-features.
 
 ## Philosophy
 

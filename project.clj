@@ -8,6 +8,7 @@
                  [org.clojure/clojurescript "0.0-2371"]
                  [om "0.7.3"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
+                 [cljs-ajax "0.3.8"]
                  [figwheel "0.1.5-SNAPSHOT"]]
 
   :plugins [[lein-cljsbuild "1.0.3"]
@@ -16,16 +17,17 @@
 
   :cljsbuild {
     :builds [{:id "dev"
-              :source-paths ["src-cljs/memobook" "src-cljs/memobook_dev"]
+              :source-paths ["src-cljs" "src-cljs-dev"]
               :compiler {:output-to "dev-resources/public/js/compiled/memobook.js"
                          :output-dir "dev-resources/public/js/compiled/out"
                          :optimizations :none
                          :source-map true
                          :pretty-print true}}
              {:id "release"
-              :source-paths ["src-cljs/memobook"]
+              :source-paths ["src-cljs"]
               :compiler {:output-to "resources/public/js/compiled/memobook.js"
                          :output-dir "resources/public/js/compiled/out"
                          :optimizations :advanced
                          :preamble ["react/react.min.js"]
-                         :externs ["react/externs/react.js"]}}]})
+                         :externs ["externs.js"
+                                   "react/externs/react.js"]}}]})
