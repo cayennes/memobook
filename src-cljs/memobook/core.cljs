@@ -2,7 +2,8 @@
   (:require [memobook.data :as data]
             [memobook.example-data :as example-data]
             [om.core :as om :include-macros true]
-            [om.dom :as dom :include-macros true]))
+            [om.dom :as dom :include-macros true]
+            [ajax.core :as ajax]))
 
 ;; initialize data
 
@@ -16,10 +17,16 @@
                                  data/read-input
                                  flatten-data
                                  shuffle)
-                      :sentences (-> example-data/sentence-data
-                                     data/read-input
-                                     flatten-data)
+                      :sentences []
                       :mode :sentences}))
+
+(defn load-sentences! [data]
+  (->> data
+       data/read-input
+       flatten-data
+       (swap! app-state #(assoc %1 :sentences %2))))
+
+(load-sentences! example-data/sentence-data)
 
 ;; some general stuff
 
@@ -173,11 +180,31 @@
                                     :onClick #(om/transact! lines clear-correct)}
                      (dom/span #js {:className "glyphicon glyphicon-play"}))))))))
 
+;; TODO: ability to load vocab as well (will need some new data handling)
+(defn handle-dropbox-file [response]
+  (-> response
+      js->clj
+      first
+      (get "link")
+      (ajax/GET {:response-format :edn
+                 :handler load-sentences!})))
+
+(defn open-dropbox-chooser []
+  (.choose js/Dropbox #js {:success handle-dropbox-file
+                           :cancel identity
+                           :linkType "direct"
+                           :multiselect false
+                           :extensions #js [".edn"]}))
+
 (defn app-view [app owner]
   (reify
     om/IRender
     (render [_]
       (dom/div #js {:className "panel panel-default"}
+               (dom/div #js {:className "panel-heading"}
+                        (dom/button #js {:onClick open-dropbox-chooser
+                                         :className "btn btn-default"}
+                                    "load edn sentence file from DropBox"))
                (dom/nav #js {:className "panel-body"}
                         (dom/ul #js {:className "nav nav-tabs"}
                                 (dom/li #js {:role "presentation"
