@@ -10,23 +10,24 @@
 (defn flatten-data [data]
   (->> data
        (map :content)
-       (apply concat)
-       vec))
+       (apply concat)))
 
-(def app-state (atom {:words (-> example-data/word-data
-                                 data/read-input
-                                 flatten-data
-                                 shuffle)
-                      :sentences []
-                      :mode :sentences}))
+(def app-state (atom {:mode :sentence}))
 
-(defn load-sentences! [data]
+(defn load-item! [item]
+  (swap! app-state
+         (fn [a] (update-in a [(:type item)] #(conj % item)))))
+
+(defn load-data! [data]
+  (swap! app-state #(assoc %1 :word []
+                              :sentence []))
   (->> data
        data/read-input
        flatten-data
-       (swap! app-state #(assoc %1 :sentences %2))))
+       (map load-item!)
+       doall))
 
-(load-sentences! example-data/sentence-data)
+(load-data! example-data/data)
 
 ;; some general stuff
 
@@ -36,7 +37,7 @@
 
 (defmulti show-line :type)
 
-(defn fake [item] {:data (repeat (count item) nil)
+(defn fake [item] {:data (repeat (count (:data item)) nil)
                    :state :fake
                    :type (:type item)})
 
@@ -180,14 +181,14 @@
                                     :onClick #(om/transact! lines clear-correct)}
                      (dom/span #js {:className "glyphicon glyphicon-play"}))))))))
 
-;; TODO: ability to load vocab as well (will need some new data handling)
+;; TODO: proper error rather than dying for malformed edn
 (defn handle-dropbox-file [response]
   (-> response
       js->clj
       first
       (get "link")
       (ajax/GET {:response-format :edn
-                 :handler load-sentences!})))
+                 :handler load-data!})))
 
 (defn open-dropbox-chooser []
   (.choose js/Dropbox #js {:success handle-dropbox-file
@@ -204,16 +205,20 @@
                (dom/div #js {:className "panel-heading"}
                         (dom/button #js {:onClick open-dropbox-chooser
                                          :className "btn btn-default"}
-                                    "load edn sentence file from DropBox"))
+                                    "load edn file from DropBox")
+                        " "
+                        (dom/button #js {:onClick #(load-data! example-data/data)
+                                         :className "btn btn-default"}
+                                    "reload example data"))
                (dom/nav #js {:className "panel-body"}
                         (dom/ul #js {:className "nav nav-tabs"}
                                 (dom/li #js {:role "presentation"
-                                             :className (if (= :sentences (:mode app)) "active" "")
-                                             :onClick (fn [] (om/update! app :mode :sentences))}
+                                             :className (if (= :sentence (:mode app)) "active" "")
+                                             :onClick (fn [] (om/update! app :mode :sentence))}
                                         (dom/a nil "sentences"))
                                 (dom/li #js {:role "presentation"
-                                             :className (if (= :words (:mode app)) "active" "")
-                                             :onClick (fn [] (om/update! app :mode :words))}
+                                             :className (if (= :word (:mode app)) "active" "")
+                                             :onClick (fn [] (om/update! app :mode :word))}
                                         (dom/a nil "words"))))
                (dom/div #js {:style #js {:fontFamily "serif"} :className "panel-body"}
                         nil
