@@ -205,7 +205,11 @@
                (dom/div #js {:className "panel-heading"}
                         (dom/button #js {:onClick open-dropbox-chooser
                                          :className "btn btn-default"}
-                                    "load edn file from DropBox"))
+                                    "load edn file from DropBox")
+                        " "
+                        (dom/button #js {:onClick #(load-data! example-data/data)
+                                         :className "btn btn-default"}
+                                    "reload example data"))
                (dom/nav #js {:className "panel-body"}
                         (dom/ul #js {:className "nav nav-tabs"}
                                 (dom/li #js {:role "presentation"
