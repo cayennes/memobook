@@ -22,6 +22,11 @@
     (->> elements
          (map #(read-input ['simple element-type %]))
          (apply concat)
-         (mapv (fn [e] (update-in e [:collections 0] #(into [grouping] %)))))
+         (map (fn [e] (update-in e [:collections 0] #(into [grouping] %)))))
     [{:content (mapv #(create-element element-type %) elements)
       :collections [[grouping]]}]))
+
+(defmethod read-input 'composite [[_ & contents]]
+  (->> contents
+       (map read-input)
+       (apply concat)))
