@@ -17,14 +17,18 @@
 
 (defmulti read-input first)
 
-(defmethod read-input 'simple [[_ element-type [grouping & elements]]]
+(defn read-simple-grouping [element-type [grouping & elements]]
   (if (list? (first elements))
-    (->> elements
-         (map #(read-input ['simple element-type %]))
+    (->> (map #(read-simple-grouping element-type %) elements)
          (apply concat)
          (map (fn [e] (update-in e [:collections 0] #(into [grouping] %)))))
     [{:content (mapv #(create-element element-type %) elements)
       :collections [[grouping]]}]))
+
+(defmethod read-input 'simple [[_ element-type & groups]]
+  (->> groups
+       (map #(read-simple-grouping element-type %))
+       (apply concat)))
 
 (defmethod read-input 'composite [[_ & contents]]
   (->> contents
