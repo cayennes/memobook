@@ -37,13 +37,19 @@
 
 (defmulti show-line :type)
 
+(defmulti reset-line :type)
+
+(defmethod reset-line :default
+  [line]
+  (assoc line :state nil))
+
 (defn fake [item] {:data (repeat (count (:data item)) nil)
                    :state :fake
                    :type (:type item)})
 
 (defn current-lines [lines]
-  (->> lines
-       (#(concat % (repeat (fake (first %)))))
+  (->> (concat lines (repeat (fake (first lines))))
+       (remove #(= :done (:state %)))
        (take 15)
        (vec)))
 
@@ -140,21 +146,23 @@
                        (:data line)))
     line))
 
+(defmethod reset-line :sentence [line]
+  (-> line
+      (update-in [:data] (partial mapv #(assoc % :show-kana false
+                                                 :show-translation false)))
+      (assoc :state nil)))
+
 ;; more general stuff
 
-(defn reset-line [line]
-  (if-let [prompt-line (when (:state line) (assoc line :state :prompt))]
-    (if (= :sentence (:type prompt-line))
-      (update-in prompt-line
-                 [:data]
-                 (partial mapv #(assoc % :show-kana false :show-translation false)))
-      prompt-line)
-    line))
+(defn clear-correct [lines]
+  (mapv #(case (:state %)
+           nil %
+           :wrong (reset-line %)
+           (assoc % :state :done))
+        lines))
 
-(defn clear-correct [lines]; TODO: make this not break when going to none
-  (->> lines
-       (filterv #(= :wrong (:state % :wrong)))
-       (mapv reset-line)))
+(defn reset-reviews [lines]
+  (mapv reset-line lines))
 
 (defn show-lines [lines]
   (mapv show-line lines))
@@ -172,14 +180,18 @@
                              (map #(dom/th nil %) (header-for (first lines))))
                       (om/build-all line-view (current-lines lines)))
                (dom/div #js {:className "panel-footer"}
-                 (dom/div #js {:className "btn-group"}
-                   (dom/button #js {:onClick (fn [_]
-                                               (om/transact! lines show-lines))
-                                    :className "btn btn-default"}
-                     (dom/span #js {:className "glyphicon glyphicon-eye-open"}))
-                   (dom/button #js {:className "btn btn-default"
-                                    :onClick #(om/transact! lines clear-correct)}
-                     (dom/span #js {:className "glyphicon glyphicon-play"}))))))))
+                        (dom/button #js {:className "btn btn-default"
+                                         :onClick #(om/transact! lines reset-reviews)}
+                                    "reset reviews")
+                        " "
+                        (dom/div #js {:className "btn-group"}
+                                 (dom/button #js {:onClick (fn [_]
+                                                             (om/transact! lines show-lines))
+                                                  :className "btn btn-default"}
+                                             "show all")
+                                 (dom/button #js {:className "btn btn-default"
+                                                  :onClick #(om/transact! lines clear-correct)}
+                                             "continue")))))))
 
 ;; TODO: proper error rather than dying for malformed edn
 (defn handle-dropbox-file [response]
