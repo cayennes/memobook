@@ -13,7 +13,8 @@
 
   :plugins [[lein-cljsbuild "1.0.3"]
             [lein-figwheel "0.1.5-SNAPSHOT"]
-            [com.cemerick/austin "0.1.5"]]
+            [com.cemerick/austin "0.1.5"]
+            [lein-marginalia "0.8.0"]]
 
   :cljsbuild {
     :builds [{:id "dev"

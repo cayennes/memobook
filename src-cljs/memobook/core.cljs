@@ -5,58 +5,84 @@
             [om.dom :as dom :include-macros true]
             [ajax.core :as ajax]))
 
-;; initialize data
+;; # Initialize data
 
-(defn flatten-data [data]
+(defn flatten-data
+  "transform data from memo form to a flat list of lines to study"
+  [data]
   (->> data
        (map :content)
        (apply concat)))
 
+;; The data will be read in; set the mode of the app to show the sentences
 (def app-state (atom {:mode :sentence}))
 
-(defn load-item! [item]
+(defn load-item!
+  "add given item to the list of items of its type in the app state"
+  [item]
   (swap! app-state
          (fn [a] (update-in a [(:type item)] #(conj % item)))))
 
-(defn load-data! [data]
+(defn load-data!
+  "set the app state to the given data"
+  [data]
+  ;; clear existing data
   (swap! app-state #(assoc %1 :word []
                               :sentence []))
+  ;; read the new data in
   (->> data
        data/read-input
        flatten-data
        (map load-item!)
        doall))
 
+;; Load the example data to start with
 (load-data! example-data/data)
 
-;; some general stuff
+;; # Some general stuff
 
-(defmulti header-for :type)
+(defmulti header-for
+  "a list of titles appropriate for an html table of this type of item"
+  :type)
 
-(defmulti line-view :type)
+(defmulti line-view
+  "om component to for viewing the item as a line of a table"
+  :type)
 
-(defmulti show-line :type)
+(defmulti show-line
+  "a version of the line completely showing the answer"
+  :type)
 
-(defmulti reset-line :type)
+(defmulti reset-line
+  "a version of the line in its initial state"
+  :type)
 
 (defmethod reset-line :default
   [line]
   (assoc line :state nil))
 
-(defn fake [item] {:data (repeat (count (:data item)) nil)
-                   :state :fake
-                   :type (:type item)})
+(defn fake
+  "a placeholder blank item that can fill the same role as the one given"
+  [item]
+  {:data (repeat (count (:data item)) nil)
+   :state :fake
+   :type (:type item)})
 
-(defn current-lines [lines]
+(defn current-lines
+  "just the lines that should be shown of the ones given"
+  [lines]
   (->> (concat lines (repeat (fake (first lines))))
        (remove #(= :done (:state %)))
        (take 15)
        (vec)))
 
-(defn set-seen [line]
+(defn set-seen
+  "a copy of the item with state indicating that it has been seen"
+  [line]
   (when-not (:state line) (om/update! line :state :prompt)))
 
 (defn correctness-thumb-view [state owner]
+  "om component showing a thumbs down if the item is marked as wrong"
   (reify
     om/IRender
     (render [_]
@@ -64,7 +90,7 @@
         (dom/span #js {:className "glyphicon glyphicon-thumbs-down"})
         (dom/span nil nil)))))
 
-;; display words
+;; # Words
 
 (defmethod header-for :word [_]
   ["漢字" "かな" "English"])
@@ -95,7 +121,7 @@
     (assoc line :state :right)
     line))
 
-;; display sentences
+;; # Sentences
 
 (defmethod header-for :sentence [_]
   ["文"])
@@ -152,19 +178,25 @@
                                                  :show-translation false)))
       (assoc :state nil)))
 
-;; more general stuff
+;; # More general stuff
 
-(defn clear-correct [lines]
+(defn clear-correct
+  "set correct things to done and incorrect things to their initial state"
+  [lines]
   (mapv #(case (:state %)
            nil %
            :wrong (reset-line %)
            (assoc % :state :done))
         lines))
 
-(defn reset-reviews [lines]
+(defn reset-reviews
+  "reset everything to the initial state"
+  [lines]
   (mapv reset-line lines))
 
-(defn show-lines [lines]
+(defn show-lines
+  "set everything to shown"
+  [lines]
   (mapv show-line lines))
 
 (defn review-table-view [lines owner]
@@ -193,8 +225,12 @@
                                                   :onClick #(om/transact! lines clear-correct)}
                                              "continue")))))))
 
+;; ## Dropbox data loading
+
 ;; TODO: proper error rather than dying for malformed edn
-(defn handle-dropbox-file [response]
+(defn handle-dropbox-file
+  "load the data in the edn file indicated by the dropbox callback"
+  [response]
   (-> response
       js->clj
       first
@@ -202,12 +238,16 @@
       (ajax/GET {:response-format :edn
                  :handler load-data!})))
 
-(defn open-dropbox-chooser []
+(defn open-dropbox-chooser
+  "use dropbox's chooser functionality to select an edn file"
+  []
   (.choose js/Dropbox #js {:success handle-dropbox-file
                            :cancel identity
                            :linkType "direct"
                            :multiselect false
                            :extensions #js [".edn"]}))
+
+;; ## Finally, display the app
 
 (defn app-view [app owner]
   (reify
