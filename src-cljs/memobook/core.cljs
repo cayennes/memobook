@@ -5,7 +5,7 @@
             [om.dom :as dom :include-macros true]
             [ajax.core :as ajax]))
 
-;; # Initialize data
+;; # Data loading
 
 (defn flatten-data
   "transform data from memo form to a flat list of lines to study"
@@ -39,7 +39,31 @@
 ;; Load the example data to start with
 (load-data! example-data/data)
 
-;; # Some general stuff
+;; ## Dropbox data loading
+;;
+;; memobook can load data to review from an edn file stored in dropbox
+
+;; TODO: proper error rather than dying for malformed edn
+(defn handle-dropbox-file
+  "load the data in the edn file indicated by the dropbox callback"
+  [response]
+  (-> response
+      js->clj
+      first
+      (get "link")
+      (ajax/GET {:response-format :edn
+                 :handler load-data!})))
+
+(defn open-dropbox-chooser
+  "use dropbox's chooser functionality to select an edn file"
+  []
+  (.choose js/Dropbox #js {:success handle-dropbox-file
+                           :cancel identity
+                           :linkType "direct"
+                           :multiselect false
+                           :extensions #js [".edn"]}))
+
+;; # Views for types of things to review
 
 (defmulti header-for
   "a list of titles appropriate for an html table of this type of item"
@@ -90,7 +114,7 @@
         (dom/span #js {:className "glyphicon glyphicon-thumbs-down"})
         (dom/span nil nil)))))
 
-;; # Words
+;; ## Words
 
 (defmethod header-for :word [_]
   ["漢字" "かな" "English"])
@@ -121,7 +145,7 @@
     (assoc line :state :right)
     line))
 
-;; # Sentences
+;; ## Sentences
 
 (defmethod header-for :sentence [_]
   ["文"])
@@ -178,7 +202,7 @@
                                                  :show-translation false)))
       (assoc :state nil)))
 
-;; # More general stuff
+;; # Main views
 
 (defn clear-correct
   "set correct things to done and incorrect things to their initial state"
@@ -212,42 +236,17 @@
                              (map #(dom/th nil %) (header-for (first lines))))
                       (om/build-all line-view (current-lines lines)))
                (dom/div #js {:className "panel-footer"}
-                        (dom/button #js {:className "btn btn-default"
-                                         :onClick #(om/transact! lines reset-reviews)}
+                        (dom/button #js {:onClick #(om/transact! lines reset-reviews)
+                                         :className "btn btn-default"}
                                     "reset reviews")
                         " "
                         (dom/div #js {:className "btn-group"}
-                                 (dom/button #js {:onClick (fn [_]
-                                                             (om/transact! lines show-lines))
+                                 (dom/button #js {:onClick #(om/transact! lines show-lines)
                                                   :className "btn btn-default"}
                                              "show all")
                                  (dom/button #js {:className "btn btn-default"
                                                   :onClick #(om/transact! lines clear-correct)}
                                              "continue")))))))
-
-;; ## Dropbox data loading
-
-;; TODO: proper error rather than dying for malformed edn
-(defn handle-dropbox-file
-  "load the data in the edn file indicated by the dropbox callback"
-  [response]
-  (-> response
-      js->clj
-      first
-      (get "link")
-      (ajax/GET {:response-format :edn
-                 :handler load-data!})))
-
-(defn open-dropbox-chooser
-  "use dropbox's chooser functionality to select an edn file"
-  []
-  (.choose js/Dropbox #js {:success handle-dropbox-file
-                           :cancel identity
-                           :linkType "direct"
-                           :multiselect false
-                           :extensions #js [".edn"]}))
-
-;; ## Finally, display the app
 
 (defn app-view [app owner]
   (reify
@@ -266,11 +265,11 @@
                         (dom/ul #js {:className "nav nav-tabs"}
                                 (dom/li #js {:role "presentation"
                                              :className (if (= :sentence (:mode app)) "active" "")
-                                             :onClick (fn [] (om/update! app :mode :sentence))}
+                                             :onClick #(om/update! app :mode :sentence)}
                                         (dom/a nil "sentences"))
                                 (dom/li #js {:role "presentation"
                                              :className (if (= :word (:mode app)) "active" "")
-                                             :onClick (fn [] (om/update! app :mode :word))}
+                                             :onClick #(om/update! app :mode :word)}
                                         (dom/a nil "words"))))
                (dom/div #js {:style #js {:fontFamily "serif"} :className "panel-body"}
                         nil
