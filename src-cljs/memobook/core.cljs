@@ -262,14 +262,16 @@
                                     "reload example data"))
                (dom/nav #js {:className "panel-body"}
                         (dom/ul #js {:className "nav nav-tabs"}
-                                (dom/li #js {:role "presentation"
-                                             :className (if (= :sentence (:mode app)) "active" "")
-                                             :onClick #(om/update! app :mode :sentence)}
-                                        (dom/a nil "sentences"))
-                                (dom/li #js {:role "presentation"
-                                             :className (if (= :word (:mode app)) "active" "")
-                                             :onClick #(om/update! app :mode :word)}
-                                        (dom/a nil "words"))))
+                                (when (seq (:sentence app))
+                                  (dom/li #js {:role "presentation"
+                                               :className (if (= :sentence (:mode app)) "active" "")
+                                               :onClick #(om/update! app :mode :sentence)}
+                                          (dom/a nil "sentences")))
+                                (when (seq (:word app))
+                                  (dom/li #js {:role "presentation"
+                                               :className (if (= :word (:mode app)) "active" "")
+                                               :onClick #(om/update! app :mode :word)}
+                                          (dom/a nil "words")))))
                (dom/div #js {:style #js {:fontFamily "serif"} :className "panel-body"}
                         nil
                         (om/build review-table-view ((:mode app) app)))))))
