@@ -17,28 +17,23 @@
 ;; The data will be read in; set the mode of the app to show the sentences
 (def app-state (atom {:mode :sentence}))
 
-(defn load-item!
-  "add given item to the list of items of its type in the app state"
-  [item]
-  (swap! app-state
-         (fn [a] (update-in a [(:type item)] #(conj % item)))))
+(defn load-item
+  [current item]
+  (update-in current [(:type item)] #(conj % item)))
+
+(defn load-data
+  [data]
+  (-> data
+      data/read-input
+      flatten-data
+      (#(reduce load-item {:sentence [] :word []} %))
+      (update-in [:word] shuffle)
+      (update-in [:sentence] shuffle)))
 
 (defn load-data!
   "set the app state to the given data"
   [data]
-  ;; clear existing data
-  (swap! app-state #(assoc % :word []
-                             :sentence []))
-  ;; read the new data in
-  (->> data
-       data/read-input
-       flatten-data
-       (map load-item!)
-       doall)
-
-  ;; randomize order
-  (swap! app-state #(update-in % [:word] shuffle))
-  (swap! app-state #(update-in % [:sentence] shuffle)))
+  (swap! app-state #(merge % (load-data data))))
 
 ;; Load the example data to start with
 (load-data! example-data/data)
