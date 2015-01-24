@@ -27,14 +27,18 @@
   "set the app state to the given data"
   [data]
   ;; clear existing data
-  (swap! app-state #(assoc %1 :word []
-                              :sentence []))
+  (swap! app-state #(assoc % :word []
+                             :sentence []))
   ;; read the new data in
   (->> data
        data/read-input
        flatten-data
        (map load-item!)
-       doall))
+       doall)
+
+  ;; randomize order
+  (swap! app-state #(update-in % [:word] shuffle))
+  (swap! app-state #(update-in % [:sentence] shuffle)))
 
 ;; Load the example data to start with
 (load-data! example-data/data)
