@@ -135,7 +135,7 @@
                                                    %)))}
              (dom/th nil (om/build correctness-thumb-view (:state line)))
              (map #(dom/td nil %)
-                  (if (not= (:state line) :prompt)
+                  (if (not= (:state line :prompt) :prompt)
                     (:data line)
                     [(-> line :data first) nil nil]))))))
 
