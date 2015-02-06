@@ -1,11 +1,11 @@
 # Memobook
 
-A computer implementation of studying via lists instead of flashcards.  It has
-some hardcoded Japanese vocab from the Genki textbook, and a few sentences from
-よつばと！.
+A computer implementation of studying via lists instead of flashcards.
 
-I'm slowly working on it, but currently that's taking the form of inexplicable
-half-features.
+Extremely alpha state.  In the highly unlikely event that anyone besides me
+wants to and succeeds in using this for anything beyond trying out the
+hardcoded example material, chances are something will happen like a change to
+the data format or corrupted review history.
 
 ## Philosophy
 
@@ -17,12 +17,11 @@ steps for each review item.  (I used to use a similar system on paper, largely
 because it was less work to create the lists than decks of cards - and
 sometimes even just used the list in the textbook.)
 
-Memobook doesn't realize the dream of the best of both worlds, but it has an
-interface close to what I imagine such a thing would have.  It's an experiment
-in whether this kind of approach is something worth pursuing.
+This is an experiment in whether this kind of thing is something worth
+pursuing.
 
 ## License
 
-Copyright © 2014 Cayenne Geis
+Copyright © 2014-2015 Cayenne Geis
 
 Distributed under the Eclipse Public License either version 1.0 or any later version.
