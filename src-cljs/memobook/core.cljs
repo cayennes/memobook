@@ -1,11 +1,18 @@
 (ns memobook.core
+  (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [memobook.data :as data]
+            [memobook.dropbox :as dropbox]
             [memobook.example-data :as example-data]
+            [memobook.srs :as srs]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
-            [ajax.core :as ajax]))
+            [cljs.core.async :refer [chan put! take! <! >!]]))
 
 ;; # Data loading
+
+(defn load-item
+  [current item]
+  (update-in current [(:type item)] #(conj % item)))
 
 (defn flatten-data
   "transform data from memo form to a flat list of lines to study"
@@ -14,53 +21,55 @@
        (map :content)
        (apply concat)))
 
-;; The data will be read in; set the mode of the app to show the sentences
-(def app-state (atom {:mode :sentence}))
-
-(defn load-item
-  [current item]
-  (update-in current [(:type item)] #(conj % item)))
-
 (defn load-data
   [data]
-  (-> data
-      data/read-input
-      flatten-data
-      (#(reduce load-item {:sentence [] :word []} %))
-      (update-in [:word] shuffle)
-      (update-in [:sentence] shuffle)))
+  (let [sort-fn (if (dropbox/dropbox-authenticated?)
+                  srs/sort-review-queue
+                  shuffle)]
+    (-> data
+        data/read-input
+        flatten-data
+        (#(reduce load-item {:sentence [] :word []} %))
+        (update-in [:word] sort-fn)
+        (update-in [:sentence] sort-fn))))
 
-(defn load-data!
-  "set the app state to the given data"
-  [data]
-  (swap! app-state #(merge % (load-data data))))
+;; The data will be read in; set the mode of the app to show the sentences
+(defonce app-state (atom {:mode :sentence}))
 
-;; Load the example data to start with
-(load-data! example-data/data)
+;; putting the app on this channel will cause data to be updated
+;; loop that handles it defined in this defonce; we don't want to be loading
+;; data multiple times at once
+(defonce data-update-ch
+  (let [ch (chan 1)] ;; queue only one update request while updating
+    (go
+      (loop []
+        (let [app (<! ch)
+              data (if (:logged-in @app)
+                     (<! (dropbox/fetch-data-from-dropbox))
+                     example-data/data)]
+          (om/transact! app #(merge % (load-data data))))
+        (recur)))
+    ch))
 
-;; ## Dropbox data loading
-;;
-;; memobook can load data to review from an edn file stored in dropbox
+;; # Logging in and out
 
-;; TODO: proper error rather than dying for malformed edn
-(defn handle-dropbox-file
-  "load the data in the edn file indicated by the dropbox callback"
-  [response]
-  (-> response
-      js->clj
-      first
-      (get "link")
-      (ajax/GET {:response-format :edn
-                 :handler load-data!})))
+(defn login
+  [app & {:keys [interactive] :or {interactive true}}]
+  (go
+    (let [previously-logged-in? (:logged-in @app)
+          logged-in? (<! (dropbox/dropbox-login :interactive interactive))]
+      (when-not (= logged-in? previously-logged-in?)
+        (om/update! app :logged-in logged-in?)
+        (put! data-update-ch app)))))
 
-(defn open-dropbox-chooser
-  "use dropbox's chooser functionality to select an edn file"
-  []
-  (.choose js/Dropbox #js {:success handle-dropbox-file
-                           :cancel identity
-                           :linkType "direct"
-                           :multiselect false
-                           :extensions #js [".edn"]}))
+(defn logout
+  [app]
+  (go
+    (let [previously-logged-in? (:logged-in @app)
+          logged-in? (<! (dropbox/dropbox-logout))]
+      (when-not (= logged-in? previously-logged-in?)
+        (om/update! app :logged-in logged-in?)
+        (put! data-update-ch app)))))
 
 ;; # Views for types of things to review
 
@@ -204,18 +213,20 @@
 ;; # Main views
 
 (defn clear-correct
-  "set correct things to done and incorrect things to their initial state"
+  "set correct things to done and incorrect things to their initial state
+
+  update srs information"
   [lines]
   (mapv #(case (:state %)
            nil %
-           :wrong (reset-line %)
-           (assoc % :state :done))
+           :done %
+           :wrong (do (when (dropbox/dropbox-authenticated?)
+                        (srs/update-srs! % :wrong))
+                      (reset-line %))
+           (do (when (dropbox/dropbox-authenticated?)
+                 (srs/update-srs! % :right))
+               (assoc % :state :done)))
         lines))
-
-(defn reset-reviews
-  "reset everything to the initial state"
-  [lines]
-  (mapv reset-line lines))
 
 (defn show-lines
   "set everything to shown"
@@ -226,40 +237,48 @@
   (reify
     om/IRender
     (render [_]
-      (dom/div #js {:className "panel panel-default"}
-               (apply dom/table
-                      #js {:className "table"}
-                      (apply dom/tr
-                             nil
-                             (dom/th nil (dom/span #js {:className "glyphicon glyphicon-thumbs-up"}))
-                             (map #(dom/th nil %) (header-for (first lines))))
-                      (om/build-all line-view (current-lines lines)))
-               (dom/div #js {:className "panel-footer"}
-                        (dom/button #js {:onClick #(om/transact! lines reset-reviews)
-                                         :className "btn btn-default"}
-                                    "reset reviews")
-                        " "
-                        (dom/div #js {:className "btn-group"}
-                                 (dom/button #js {:onClick #(om/transact! lines show-lines)
-                                                  :className "btn btn-default"}
-                                             "show all")
-                                 (dom/button #js {:className "btn btn-default"
-                                                  :onClick #(om/transact! lines clear-correct)}
-                                             "continue")))))))
+      (if (pos? (count lines))
+        (dom/div #js {:className "panel panel-default"}
+                 (apply dom/table
+                        #js {:className "table"}
+                        (apply dom/tr
+                               nil
+                               (dom/th nil (dom/span #js {:className "glyphicon glyphicon-thumbs-up"}))
+                               (map #(dom/th nil %) (header-for (first lines))))
+                        (om/build-all line-view (current-lines lines)))
+                 (dom/div #js {:className "panel-footer"}
+                          (dom/div #js {:className "btn-group"}
+                                   (dom/button #js {:onClick #(om/transact! lines show-lines)
+                                                    :className "btn btn-default"}
+                                               "show all")
+                                   (dom/button #js {:className "btn btn-default"
+                                                    :onClick #(om/transact! lines clear-correct)}
+                                               "continue"))))
+        (dom/div nil "")))))
 
 (defn app-view [app owner]
   (reify
+    om/IWillMount
+    (will-mount [_]
+      ;; unobviously, this will also always update the data on first load,
+      ;; because nil is not false
+      (login app :interactive false))
+
     om/IRender
     (render [_]
       (dom/div #js {:className "panel panel-default"}
                (dom/div #js {:className "panel-heading"}
-                        (dom/button #js {:onClick open-dropbox-chooser
-                                         :className "btn btn-default"}
-                                    "load edn file from DropBox")
+                        (if (:logged-in app)
+                          (dom/button #js {:onClick #(logout app)
+                                           :className "btn btn-default"}
+                                      "log out of Dropbox")
+                          (dom/button #js {:onClick #(login app)
+                                           :className "btn btn-default"}
+                                      "log in to Dropbox"))
                         " "
-                        (dom/button #js {:onClick #(load-data! example-data/data)
+                        (dom/button #js {:onClick #(put! data-update-ch app)
                                          :className "btn btn-default"}
-                                    "reload example data"))
+                                    "reload data"))
                (dom/nav #js {:className "panel-body"}
                         (dom/ul #js {:className "nav nav-tabs"}
                                 (when (seq (:sentence app))
