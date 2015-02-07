@@ -44,19 +44,27 @@
 ;; stored in the datastore; this seems like the approach most independant of
 ;; those lower level implementation details.
 
-(defn due-factor [item]
-  "a number indicating degree of over/under-dueness of the item
+(defn due-factor
+  "A number indicating degree of over/under-dueness of the item
 
-  item is of the same form expected by sort-review-queue"
+  Always negative; very negative means very overdue (this makes the natural
+  sort simpler.)  Also includes a small random factor to decrease the clumping
+  of cards that were introduced together.
+
+  New cards will range between exactly due and slightly underdue
+
+  Item is of the same form expected by sort-review-queue"
+  [item]
   (let [interval (-> item :srs :interval)
         since-review (-> item :srs :reviewed elapsed-interval)]
-    (* -1; to make it a descending sort.
+    (* -1;; for sort order
        (+ 1 (rand 0.1));; randomization factor to decrease clumping
        (if interval
-         (/ since-review interval)
-         0.9))))
+         (/ since-review interval);; basic dueness ratio
+         0.9))));; value for new cards
 
 (defn new-interval
+  "New interval based on the old and actual intervals and result"
   [old-interval actual-interval result]
   (if old-interval
     (case result
@@ -67,11 +75,11 @@
     min-interval))
 
 (defn updated-item
-  "item updated with new interval based on the result and current srs state
+  "Item updated with new interval based on the result and current srs state
 
-  result should be :right or :wrong
+  Result should be :right or :wrong
 
-  item is a review item with the addition of an :srs key whose value is a map
+  Item is a review item with the addition of an :srs key whose value is a map
   containing :reviewed and :interval"
   [item result]
   (let [old-interval (-> item :srs :interval)

@@ -53,23 +53,27 @@
 
 ;; # Logging in and out
 
-(defn login
-  [app & {:keys [interactive] :or {interactive true}}]
+(defn log-in-or-out
+  "log in or out of dropbox and update the app and data as appropriate"
+  [action app & {:keys [interactive] :or {interactive true}}]
   (go
     (let [previously-logged-in? (:logged-in @app)
-          logged-in? (<! (dropbox/dropbox-login :interactive interactive))]
+          logged-in? (<! (case action
+                           :login (dropbox/dropbox-login :interactive interactive)
+                           :logout (dropbox/dropbox-logout)))]
       (when-not (= logged-in? previously-logged-in?)
         (om/update! app :logged-in logged-in?)
         (put! data-update-ch app)))))
 
-(defn logout
-  [app]
-  (go
-    (let [previously-logged-in? (:logged-in @app)
-          logged-in? (<! (dropbox/dropbox-logout))]
-      (when-not (= logged-in? previously-logged-in?)
-        (om/update! app :logged-in logged-in?)
-        (put! data-update-ch app)))))
+(def login
+  "log in to dropbox
+  
+  interactive unless passed :interactive false"
+  (partial log-in-or-out :login))
+
+(def logout
+  "log out of dropbox and update data"
+  (partial log-in-or-out :logout))
 
 ;; # Views for types of things to review
 
@@ -261,7 +265,9 @@
     om/IWillMount
     (will-mount [_]
       ;; unobviously, this will also always update the data on first load,
-      ;; because nil is not false
+      ;; because login refreshes the data when the login state changes; it
+      ;; starts out as nil before attempting any login, and is either true or
+      ;; false afterward
       (login app :interactive false))
 
     om/IRender
