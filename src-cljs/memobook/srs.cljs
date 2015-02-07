@@ -68,7 +68,7 @@
   [old-interval actual-interval result]
   (if old-interval
     (case result
-      :right (max (+ old-interval actual-interval)
+      :right (max (+ old-interval (* 1.5 actual-interval))
                   (* 2.5 actual-interval)
                   min-interval)
       :wrong min-interval)
