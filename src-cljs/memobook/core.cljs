@@ -110,7 +110,7 @@
   (->> (concat lines (repeat (fake (first lines))))
        (remove #(= :done (:state %)))
        (take 15)
-       (vec)))
+       vec))
 
 (defn set-seen
   "a copy of the item with state indicating that it has been seen"
@@ -249,7 +249,10 @@
                                nil
                                (dom/th nil (dom/span #js {:className "glyphicon glyphicon-thumbs-up"}))
                                (map #(dom/th nil %) (header-for (first lines))))
-                        (om/build-all line-view (current-lines lines)))
+                        ;; TODO: this stopped working when I upgraded om from
+                        ;; 0.7.3 to 0.8.8 and I can't figure out why
+                        #_(om/build-all line-view (current-lines lines))
+                        (map #(om/build line-view %) (current-lines lines)))
                  (dom/div #js {:className "panel-footer"}
                           (dom/div #js {:className "btn-group"}
                                    (dom/button #js {:onClick #(om/transact! lines show-lines)

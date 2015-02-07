@@ -5,29 +5,33 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :dependencies [[org.clojure/clojure "1.6.0"]
-                 [org.clojure/clojurescript "0.0-2371"]
-                 [om "0.7.3"]
+                 [org.clojure/clojurescript "0.0-2760"]
+                 [org.omcljs/om "0.8.8"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
-                 [figwheel "0.1.5-SNAPSHOT"]]
+                 [figwheel "0.2.3-SNAPSHOT"]]
 
-  :plugins [[lein-cljsbuild "1.0.3"]
-            [lein-figwheel "0.1.5-SNAPSHOT"]
-            [com.cemerick/austin "0.1.5"]
+  :plugins [[lein-cljsbuild "1.0.4"]
+            [lein-figwheel "0.2.3-SNAPSHOT"]
             [lein-marginalia "0.8.0"]]
+
+  :hooks [leiningen.cljsbuild]
+
+  :clean-targets ^{:protect false} ["dev-resources/public/js/compiled"
+                                    "resources/public/js/compiled"]
 
   :cljsbuild {
     :builds [{:id "dev"
               :source-paths ["src-cljs" "src-cljs-dev"]
               :compiler {:output-to "dev-resources/public/js/compiled/memobook.js"
                          :output-dir "dev-resources/public/js/compiled/out"
+                         :asset-path "js/compiled/out"
+                         :main memobook.dev
                          :optimizations :none
-                         :source-map true
-                         :pretty-print true}}
+                         :source-map true}}
              {:id "release"
               :source-paths ["src-cljs"]
               :compiler {:output-to "resources/public/js/compiled/memobook.js"
-                         :output-dir "resources/public/js/compiled/out"
+                         :main memobook.core
                          :optimizations :advanced
-                         :preamble ["react/react.min.js"]
-                         :externs ["externs.js"
-                                   "react/externs/react.js"]}}]})
+                         :externs ["externs.js"]
+                         :pretty-print false}}]})
