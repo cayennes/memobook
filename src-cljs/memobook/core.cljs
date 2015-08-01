@@ -243,16 +243,17 @@
     (render [_]
       (if (pos? (count lines))
         (dom/div #js {:className "panel panel-default"}
-                 (apply dom/table
-                        #js {:className "table"}
-                        (apply dom/tr
-                               nil
-                               (dom/th nil (dom/span #js {:className "glyphicon glyphicon-thumbs-up"}))
-                               (map #(dom/th nil %) (header-for (first lines))))
-                        ;; TODO: this stopped working when I upgraded om from
-                        ;; 0.7.3 to 0.8.8 and I can't figure out why
-                        #_(om/build-all line-view (current-lines lines))
-                        (map #(om/build line-view %) (current-lines lines)))
+                 (dom/table
+                   #js {:className "table"}
+                   (dom/thead nil
+                              (apply dom/tr nil
+                                     (dom/th nil (dom/span #js {:className "glyphicon glyphicon-thumbs-up"}))
+                                     (map #(dom/th nil %) (header-for (first lines)))))
+                   (apply dom/tbody nil
+                          ;; TODO: this stopped working when I upgraded om from
+                          ;; 0.7.3 to 0.8.8 and I can't figure out why
+                          #_(om/build-all line-view (current-lines lines))
+                          (map #(om/build line-view %) (current-lines lines))))
                  (dom/div #js {:className "panel-footer"}
                           (dom/div #js {:className "btn-group"}
                                    (dom/button #js {:onClick #(om/transact! lines show-lines)
