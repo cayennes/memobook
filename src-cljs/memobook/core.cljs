@@ -34,7 +34,8 @@
         (update-in [:sentence] sort-fn))))
 
 ;; The data will be read in; set the mode of the app to show the sentences
-(defonce app-state (atom {:mode :sentence}))
+(defonce app-state (atom {:mode :sentence
+                          :view-settings {:per-page 15}}))
 
 ;; putting the app on this channel will cause data to be updated
 ;; loop that handles it defined in this defonce; we don't want to be loading
@@ -67,7 +68,7 @@
 
 (def login
   "log in to dropbox
-  
+
   interactive unless passed :interactive false"
   (partial log-in-or-out :login))
 
@@ -106,10 +107,10 @@
 
 (defn current-lines
   "just the lines that should be shown of the ones given"
-  [lines]
+  [line-count lines]
   (->> (concat lines (repeat (fake (first lines))))
        (remove #(= :done (:state %)))
-       (take 15)
+       (take line-count)
        vec))
 
 (defn set-seen
@@ -237,7 +238,7 @@
   [lines]
   (mapv show-line lines))
 
-(defn review-table-view [lines owner]
+(defn review-table-view [{:keys [lines view-settings]} owner]
   (reify
     om/IRender
     (render [_]
@@ -253,7 +254,9 @@
                           ;; TODO: this stopped working when I upgraded om from
                           ;; 0.7.3 to 0.8.8 and I can't figure out why
                           #_(om/build-all line-view (current-lines lines))
-                          (map #(om/build line-view %) (current-lines lines))))
+                          (map #(om/build line-view %)
+                               (current-lines (:per-page view-settings)
+                                              lines))))
                  (dom/div #js {:className "panel-footer"}
                           (dom/div #js {:className "btn-group"}
                                    (dom/button #js {:onClick #(om/transact! lines show-lines)
@@ -263,6 +266,28 @@
                                                     :onClick #(om/transact! lines clear-correct)}
                                                "continue"))))
         (dom/div nil "")))))
+
+(defn per-page-button [{:keys [settings button-value]} owner]
+  (reify
+    om/IRender
+    (render [_]
+      (dom/button #js {:className (if (= (:per-page settings) button-value)
+                                    "active btn btn-default"
+                                    "btn btn-default")
+                       :onClick #(om/update! settings [:per-page] button-value)}
+                  button-value))))
+
+(defn view-settings-view [settings owner]
+  (reify
+    om/IRender
+    (render [_]
+      (dom/div #js {:className "panel-footer"}
+               "reviews per page: "
+               (apply dom/div #js {:className "btn-group"}
+                      (om/build-all per-page-button
+                                      (map #(array-map :settings settings
+                                                       :button-value %)
+                                           (range 5 21 5))))))))
 
 (defn app-view [app owner]
   (reify
@@ -303,7 +328,9 @@
                                           (dom/a nil "words")))))
                (dom/div #js {:style #js {:fontFamily "serif"} :className "panel-body"}
                         nil
-                        (om/build review-table-view ((:mode app) app)))))))
+                        (om/build review-table-view {:lines ((:mode app) app)
+                                                     :view-settings (:view-settings app)})
+                        (om/build view-settings-view (:view-settings app)))))))
 
 (om/root app-view app-state
   {:target (. js/document (getElementById "app"))})
