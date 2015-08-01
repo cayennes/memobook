@@ -1,0 +1,24 @@
+test:
+  pre:
+    - lein cljsbuild once release
+  override:
+    - echo "there are currently no tests besides whether it compiles (above)"
+
+general:
+  branches:
+    ignore:
+      - gh-pages
+
+deployment:
+  gh-pages:
+    branch: master
+    commands:
+      - git config --global user.email "auto-deploy@example.com"
+      - git config --global user.name "Auto Deploy"
+      - git add --force resources/public/js/compiled/memobook.js # trick to deal with ignored file
+      - git stash
+      - git checkout gh-pages
+      - git checkout master -- "*.html" circle.yml
+      - git checkout stash -- resources/public/js/compiled/memobook.js
+      - git commit -m "Automatic gh-pages update" || true # don't fail on no-op
+      - git push --set-upstream origin gh-pages
