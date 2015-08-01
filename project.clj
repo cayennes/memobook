@@ -4,14 +4,14 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
-  :dependencies [[org.clojure/clojure "1.6.0"]
-                 [org.clojure/clojurescript "0.0-2760"]
-                 [org.omcljs/om "0.8.8"]
+  :dependencies [[org.clojure/clojure "1.7.0"]
+                 [org.clojure/clojurescript "1.7.28"]
+                 [org.omcljs/om "0.9.0"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
-                 [figwheel "0.2.3-SNAPSHOT"]]
+                 [figwheel "0.3.7"]]
 
-  :plugins [[lein-cljsbuild "1.0.4"]
-            [lein-figwheel "0.2.3-SNAPSHOT"]
+  :plugins [[lein-cljsbuild "1.0.6"]
+            [lein-figwheel "0.3.7"]
             [lein-marginalia "0.8.0"]]
 
   :hooks [leiningen.cljsbuild]
