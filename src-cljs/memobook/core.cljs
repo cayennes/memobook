@@ -5,7 +5,7 @@
             [memobook.example-data :as example-data]
             [memobook.srs :as srs]
             [om.core :as om :include-macros true]
-            [om.dom :as dom :include-macros true]
+            [sablono.core :refer-macros [html]]
             [cljs.core.async :refer [chan put! take! <! >!]]))
 
 ;; # Data loading
@@ -123,9 +123,8 @@
   (reify
     om/IRender
     (render [_]
-      (if (= :wrong state)
-        (dom/span #js {:className "glyphicon glyphicon-thumbs-down"})
-        (dom/span nil nil)))))
+      (html [:span (when (= :wrong state)
+                     {:class "glyphicon glyphicon-thumbs-down"})]))))
 
 ;; ## Words
 
@@ -138,19 +137,20 @@
     om/IRender
     (render [_]
       (set-seen line)
-      (apply dom/tr
-             #js {:onClick (fn [] (om/transact! line
-                                                :state
-                                                #(condp = %
-                                                   :prompt :right
-                                                   :right :wrong
-                                                   :wrong :right
-                                                   %)))}
-             (dom/th nil (om/build correctness-thumb-view (:state line)))
-             (map #(dom/td nil %)
-                  (if (not= (:state line :prompt) :prompt)
-                    (:data line)
-                    [(-> line :data first) nil nil]))))))
+      (print line)
+      (html
+        [:tr {:onClick (fn [] (om/transact! line
+                                            :state
+                                            #(condp = %
+                                               :prompt :right
+                                               :right :wrong
+                                               :wrong :right
+                                               %)))}
+         [:th (om/build correctness-thumb-view (:state line))]
+         (map #(vector :td %)
+              (if (not= (:state line :prompt) :prompt)
+                (:data line)
+                [(-> line :data first) nil nil]))]))))
 
 (defmethod show-line :word
   [line]
@@ -167,24 +167,26 @@
   (reify
     om/IRender
     (render [_]
-      (dom/ruby #js {:onClick (fn []
-                                (when (or (:show-kana @element) (= "" (:kana @element)))
-                                  (om/transact! element #(assoc % :show-translation true)))
-                                (om/transact! element #(assoc % :show-kana true)))}
-                (:text element)
-                (when (:show-kana element) (dom/rt nil (:kana element)))
-                (when (:show-translation element)
-                  ;; rubyPosition "under" isn't supported by browsers.  oh well.
-                  (dom/rt #js {:style #js {:rubyPosition "under"}}
-                          (:definition element)))))))
+
+      (html
+        [:ruby {:onClick (fn []
+                           (when (or (:show-kana @element) (= "" (:kana @element)))
+                             (om/transact! element #(assoc % :show-translation true)))
+                           (om/transact! element #(assoc % :show-kana true)))}
+         (:text element)
+         (when (:show-kana element) [:rt (:kana element)])
+         (when (:show-translation element)
+           ;; rubyPosition "under" isn't supported by browsers/sablono.
+           ;; oh well.
+           [:rt #_{:style {:rubyPosition "under"}} (:definition element)])]))))
 
 (defn sentence-view [sentence owner]
   (reify
     om/IRender
     (render [_]
-      (apply dom/span
-             #js {:style #js {:fontSize "16pt"}}
-             (om/build-all sentence-element-view (:data sentence))))))
+      (html
+        [:span {:style {:fontSize "16pt"}}
+         (om/build-all sentence-element-view (:data sentence))]))))
 
 (defmethod line-view :sentence
   [line owner]
@@ -192,15 +194,15 @@
     om/IRender
     (render [_]
       (set-seen line)
-      (dom/tr
-        nil
-        (dom/th #js {:onClick (fn [] (om/transact! line
-                                                   :state
-                                                   #(if (= :wrong %)
-                                                      :right
-                                                      :wrong)))}
-                (om/build correctness-thumb-view (:state line)))
-        (dom/td nil (om/build sentence-view line))))))
+      (html
+        [:tr
+         [:th {:onClick (fn [] (om/transact! line
+                                             :state
+                                             #(if (= :wrong %)
+                                                :right
+                                                :wrong)))}
+          (om/build correctness-thumb-view (:state line))]
+         [:td (om/build sentence-view line)]]))))
 
 (defmethod show-line :sentence [line]
   (if (:state line)
@@ -242,52 +244,51 @@
   (reify
     om/IRender
     (render [_]
-      (if (pos? (count lines))
-        (dom/div #js {:className "panel panel-default"}
-                 (dom/table
-                   #js {:className "table"}
-                   (dom/thead nil
-                              (apply dom/tr nil
-                                     (dom/th nil (dom/span #js {:className "glyphicon glyphicon-thumbs-up"}))
-                                     (map #(dom/th nil %) (header-for (first lines)))))
-                   (apply dom/tbody nil
-                          ;; TODO: this stopped working when I upgraded om from
-                          ;; 0.7.3 to 0.8.8 and I can't figure out why
-                          #_(om/build-all line-view (current-lines lines))
-                          (map #(om/build line-view %)
-                               (current-lines (:per-page view-settings)
-                                              lines))))
-                 (dom/div #js {:className "panel-footer"}
-                          (dom/div #js {:className "btn-group"}
-                                   (dom/button #js {:onClick #(om/transact! lines show-lines)
-                                                    :className "btn btn-default"}
-                                               "show all")
-                                   (dom/button #js {:className "btn btn-default"
-                                                    :onClick #(om/transact! lines clear-correct)}
-                                               "continue"))))
-        (dom/div nil "")))))
+      (html
+        (if (pos? (count lines))
+          [:div.panel.panel-default
+           [:table.table
+            [:thead
+             [:tr
+              [:th [:span.glyphicon.glyphicon-thumbs-up]]
+              (map #(vector :th %) (header-for (first lines)))]]
+            [:tbody
+             ;; TODO: this stopped working when I upgraded om from
+             ;; 0.7.3 to 0.8.8 and I can't figure out why
+             #_(om/build-all line-view (current-lines lines))
+             (map #(om/build line-view %)
+                  (current-lines (:per-page view-settings)
+                                 lines))]]
+           [:div.panel-footer
+            [:div.btn-group
+             [:button.btn.btn-default {:onClick #(om/transact! lines show-lines)}
+              "show all"]
+             [:button.btn.btn-default {:onClick #(om/transact! lines clear-correct)}
+              "continue"]]]]
+          [:div])))))
 
 (defn per-page-button [{:keys [settings button-value]} owner]
   (reify
     om/IRender
     (render [_]
-      (dom/button #js {:className (if (= (:per-page settings) button-value)
-                                    "active btn btn-default"
-                                    "btn btn-default")
-                       :onClick #(om/update! settings [:per-page] button-value)}
-                  button-value))))
+      (html
+        [:button {:className (if (= (:per-page settings) button-value)
+                               "active btn btn-default"
+                               "btn btn-default")
+                  :onClick #(om/update! settings [:per-page] button-value)}
+         button-value]))))
 
 (defn view-settings-view [settings owner]
   (reify
     om/IRender
     (render [_]
-      (dom/div #js {:className "panel-footer"}
-               "reviews per page: "
-               (apply dom/div #js {:className "btn-group"}
-                      (om/build-all per-page-button
-                                      (map #(array-map :settings settings
-                                                       :button-value %)
-                                           (range 5 21 5))))))))
+      (html
+        [:div.panel-footer
+         "reviews per page: "
+         [:div.btn-group
+          (om/build-all per-page-button
+                        (map #(array-map :settings settings :button-value %)
+                             (range 5 21 5)))]]))))
 
 (defn app-view [app owner]
   (reify
@@ -301,36 +302,33 @@
 
     om/IRender
     (render [_]
-      (dom/div #js {:className "panel panel-default"}
-               (dom/div #js {:className "panel-heading"}
-                        (if (:logged-in app)
-                          (dom/button #js {:onClick #(logout app)
-                                           :className "btn btn-default"}
-                                      "log out of Dropbox")
-                          (dom/button #js {:onClick #(login app)
-                                           :className "btn btn-default"}
-                                      "log in to Dropbox"))
-                        " "
-                        (dom/button #js {:onClick #(put! data-update-ch app)
-                                         :className "btn btn-default"}
-                                    "reload data"))
-               (dom/nav #js {:className "panel-body"}
-                        (dom/ul #js {:className "nav nav-tabs"}
-                                (when (seq (:sentence app))
-                                  (dom/li #js {:role "presentation"
-                                               :className (if (= :sentence (:mode app)) "active" "")
-                                               :onClick #(om/update! app :mode :sentence)}
-                                          (dom/a nil "sentences")))
-                                (when (seq (:word app))
-                                  (dom/li #js {:role "presentation"
-                                               :className (if (= :word (:mode app)) "active" "")
-                                               :onClick #(om/update! app :mode :word)}
-                                          (dom/a nil "words")))))
-               (dom/div #js {:style #js {:fontFamily "serif"} :className "panel-body"}
-                        nil
-                        (om/build review-table-view {:lines ((:mode app) app)
-                                                     :view-settings (:view-settings app)})
-                        (om/build view-settings-view (:view-settings app)))))))
+      (html
+        [:div.panel.panel-default
+         [:div.panel-heading
+          (if (:logged-in app)
+            [:button.btn.btn-default {:onClick #(logout app)}
+             "log out of Dropbox"]
+            [:button.btn.btn-default {:onClick #(login app)}
+             "log in to Dropbox"])
+          " "
+          [:button.btn.btn-default {:onClick #(put! data-update-ch app)}
+           "reload data"]]
+         [:nav.panel-body
+          [:ul.nav.nav-tabs
+           (when (seq (:sentence app))
+             [:li {:role "presentation"
+                   :className (if (= :sentence (:mode app)) "active" "")
+                   :onClick #(om/update! app :mode :sentence)}
+              [:a "sentences"]])
+           (when (seq (:word app))
+             [:li {:role "presentation"
+                   :className (if (= :word (:mode app)) "active" "")
+                   :onClick #(om/update! app :mode :word)}
+              [:a "words"]])]]
+         [:div.panel-body {:style {:fontFamily "serif"}}
+          (om/build review-table-view {:lines ((:mode app) app)
+                                       :view-settings (:view-settings app)})
+          (om/build view-settings-view (:view-settings app))]]))))
 
 (om/root app-view app-state
   {:target (. js/document (getElementById "app"))})
