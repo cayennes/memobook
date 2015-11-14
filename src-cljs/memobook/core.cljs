@@ -240,6 +240,15 @@
   [lines]
   (mapv show-line lines))
 
+(defn stats-view [items]
+  (reify
+    om/IRender
+    (render [_]
+      (html
+        [:p
+         "total studying: " (count items) ". "
+         "new available: " (count (remove :srs items)) ". "]))))
+
 (defn review-table-view [{:keys [lines view-settings]} owner]
   (reify
     om/IRender
@@ -328,6 +337,7 @@
          [:div.panel-body {:style {:fontFamily "serif"}}
           (om/build review-table-view {:lines ((:mode app) app)
                                        :view-settings (:view-settings app)})
+          (om/build stats-view ((:mode app) app))
           (om/build view-settings-view (:view-settings app))]]))))
 
 (om/root app-view app-state
