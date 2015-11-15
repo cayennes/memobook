@@ -76,6 +76,13 @@
   "log out of dropbox and update data"
   (partial log-in-or-out :logout))
 
+;; # GUI helpers
+
+(defn on-click-etc
+  [f]
+  {:onClick f
+   :onTouchEnd f})
+
 ;; # Views for types of things to review
 
 (defmulti header-for
@@ -137,15 +144,14 @@
     om/IRender
     (render [_]
       (set-seen line)
-      (print line)
       (html
-        [:tr {:onClick (fn [] (om/transact! line
-                                            :state
-                                            #(condp = %
-                                               :prompt :right
-                                               :right :wrong
-                                               :wrong :right
-                                               %)))}
+        [:tr (on-click-etc (fn [] (om/transact! line
+                                                :state
+                                                #(condp = %
+                                                   :prompt :right
+                                                   :right :wrong
+                                                   :wrong :right
+                                                   %))))
          [:th (om/build correctness-thumb-view (:state line))]
          (map #(vector :td %)
               (if (not= (:state line :prompt) :prompt)
@@ -169,10 +175,11 @@
     (render [_]
 
       (html
-        [:ruby {:onClick (fn []
-                           (when (or (:show-kana @element) (= "" (:kana @element)))
-                             (om/transact! element #(assoc % :show-translation true)))
-                           (om/transact! element #(assoc % :show-kana true)))}
+        [:ruby (on-click-etc
+                 (fn []
+                   (when (or (:show-kana @element) (= "" (:kana @element)))
+                     (om/transact! element #(assoc % :show-translation true)))
+                   (om/transact! element #(assoc % :show-kana true))))
          (:text element)
          (when (:show-kana element) [:rt (:kana element)])
          (when (:show-translation element)
@@ -196,11 +203,11 @@
       (set-seen line)
       (html
         [:tr
-         [:th {:onClick (fn [] (om/transact! line
-                                             :state
-                                             #(if (= :wrong %)
-                                                :right
-                                                :wrong)))}
+         [:th (on-click-etc (fn [] (om/transact! line
+                                                 :state
+                                                 #(if (= :wrong %)
+                                                    :right
+                                                    :wrong))))
           (om/build correctness-thumb-view (:state line))]
          [:td (om/build sentence-view line)]]))))
 
@@ -325,14 +332,16 @@
          [:nav.panel-body
           [:ul.nav.nav-tabs
            (when (seq (:sentence app))
-             [:li {:role "presentation"
-                   :className (if (= :sentence (:mode app)) "active" "")
-                   :onClick #(om/update! app :mode :sentence)}
+             [:li (merge
+                    (on-click-etc #(om/update! app :mode :sentence))
+                    {:role "presentation"
+                     :className (if (= :sentence (:mode app)) "active" "")})
               [:a "sentences"]])
            (when (seq (:word app))
-             [:li {:role "presentation"
-                   :className (if (= :word (:mode app)) "active" "")
-                   :onClick #(om/update! app :mode :word)}
+             [:li (merge
+                    (on-click-etc #(om/update! app :mode :word))
+                    {:role "presentation"
+                     :className (if (= :word (:mode app)) "active" "")})
               [:a "words"]])]]
          [:div.panel-body {:style {:fontFamily "serif"}}
           (om/build review-table-view {:lines ((:mode app) app)
